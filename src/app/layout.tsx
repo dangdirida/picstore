@@ -14,18 +14,29 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://picstore-sandy.vercel.app'),
   title: 'PicStore - 디지털 이미지 마켓플레이스',
-  description: '누구나 디지털 이미지를 업로드하고 판매할 수 있는 마켓플레이스',
+  description: '크리에이터의 작품을 발견하고 소장하세요',
   openGraph: {
     title: 'PicStore',
-    description: '누구나 디지털 이미지를 업로드하고 판매할 수 있는 마켓플레이스',
-    images: ['/og-thumbnail.png'],
+    description: '크리에이터의 작품을 발견하고 소장하세요',
+    url: 'https://picstore-sandy.vercel.app',
+    siteName: 'PicStore',
+    images: [
+      {
+        url: '/og-thumbnail.png',
+        width: 1200,
+        height: 630,
+        alt: 'PicStore - 디지털 이미지 마켓플레이스',
+      },
+    ],
     type: 'website',
+    locale: 'ko_KR',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'PicStore',
-    description: '누구나 디지털 이미지를 업로드하고 판매할 수 있는 마켓플레이스',
+    description: '크리에이터의 작품을 발견하고 소장하세요',
     images: ['/og-thumbnail.png'],
   },
 }
