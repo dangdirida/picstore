@@ -7,7 +7,16 @@
       "Bash(mv picstore-app/.git . 2>/dev/null; mv picstore-app/.gitignore . 2>/dev/null; mv picstore-app/* . 2>/dev/null; mv picstore-app/.eslintrc* . 2>/dev/null; mv picstore-app/.next . 2>/dev/null; ls picstore-app/ 2>/dev/null; cp -r picstore-app/.[!.]* . 2>/dev/null; rm -rf picstore-app)",
       "Bash(npm install @supabase/supabase-js @supabase/ssr 2>&1)",
       "Bash(npm run build 2>&1 | tail -50)",
-      "Bash(npm run build 2>&1 | tail -30)"
+      "Bash(npm run build 2>&1 | tail -30)",
+      "Bash(npm install lucide-react 2>&1)",
+      "Bash(npx tsc --noEmit 2>&1 | head -40)",
+      "Bash(npx tsc --noEmit 2>&1 | head -20)",
+      "Bash(npx tsc --noEmit 2>&1 | head -10)",
+      "Bash(npm install @tosspayments/tosspayments-sdk 2>&1 | tail -5)",
+      "Bash(npm run build 2>&1)",
+      "Bash(node -e \"const sdk = require\\('@tosspayments/tosspayments-sdk'\\); console.log\\(Object.keys\\(sdk\\)\\)\" 2>&1)",
+      "Bash(cd \"/Users/ogq_de/Desktop/하루하나/PicStore\" && npm uninstall @tosspayments/tosspayments-sdk 2>&1 | tail -3)",
+      "Bash(cd \"/Users/ogq_de/Desktop/하루하나/PicStore\" && npm run build 2>&1)"
     ]
   }
 }

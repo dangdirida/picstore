@@ -4,16 +4,34 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { Work, Purchase, Download, Profile } from '@/lib/types'
+import type { Work, Profile } from '@/lib/types'
 
-type Tab = 'uploads' | 'purchases' | 'downloads' | 'profile'
+interface LocalPurchase {
+  id: string
+  itemId: string
+  title: string
+  image: string
+  price: number
+  author: string
+  method: string
+  purchasedAt: string
+}
+import { getLikedUnsplashIds, fetchUnsplashPhotosByIds, type UnsplashPhoto } from '@/lib/unsplash'
+import UnsplashCard from '@/components/UnsplashCard'
+import ImageDetailModal from '@/components/ImageDetailModal'
+
+type Tab = 'uploads' | 'purchases' | 'likes' | 'following' | 'profile'
 
 export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>('uploads')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [uploads, setUploads] = useState<Work[]>([])
-  const [purchases, setPurchases] = useState<Purchase[]>([])
-  const [downloads, setDownloads] = useState<Download[]>([])
+  const [purchases, setPurchases] = useState<LocalPurchase[]>([])
+  const [likedWorks, setLikedWorks] = useState<Work[]>([])
+  const [likedUnsplash, setLikedUnsplash] = useState<UnsplashPhoto[]>([])
+  const [followingArtists, setFollowingArtists] = useState<Profile[]>([])
+  const [likedUnsplashLoading, setLikedUnsplashLoading] = useState(false)
+  const [selectedPhoto, setSelectedPhoto] = useState<UnsplashPhoto | null>(null)
   const [loading, setLoading] = useState(true)
   const [editName, setEditName] = useState('')
   const [editBio, setEditBio] = useState('')
@@ -52,21 +70,44 @@ export default function DashboardPage() {
       .order('created_at', { ascending: false })
     setUploads((uploadsData as Work[]) || [])
 
-    // 내 구매
-    const { data: purchasesData } = await supabase
-      .from('purchases')
-      .select('*, work:works(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-    setPurchases((purchasesData as Purchase[]) || [])
+    // 내 구매 (localStorage)
+    try {
+      const stored = JSON.parse(localStorage.getItem('picstore_purchases') || '[]')
+      setPurchases(stored as LocalPurchase[])
+    } catch {
+      setPurchases([])
+    }
 
-    // 내 다운로드
-    const { data: downloadsData } = await supabase
-      .from('downloads')
-      .select('*, work:works(*)')
+    // 좋아요한 작품
+    const { data: likesData } = await supabase
+      .from('likes')
+      .select('*, work:works(*, artist:profiles!artist_id(*))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-    setDownloads((downloadsData as Download[]) || [])
+    const liked = (likesData || [])
+      .map((l: Record<string, unknown>) => l.work as Work)
+      .filter(Boolean)
+    setLikedWorks(liked)
+
+    // 팔로우한 작가
+    const { data: followsData } = await supabase
+      .from('follows')
+      .select('following:profiles!following_id(*)')
+      .eq('follower_id', user.id)
+      .order('created_at', { ascending: false })
+    const artists = (followsData || [])
+      .map((f: Record<string, unknown>) => f.following as Profile)
+      .filter(Boolean)
+    setFollowingArtists(artists)
+
+    // Unsplash 좋아요 (localStorage)
+    const unsplashIds = getLikedUnsplashIds()
+    if (unsplashIds.length > 0) {
+      setLikedUnsplashLoading(true)
+      const photos = await fetchUnsplashPhotosByIds(unsplashIds.slice(0, 30))
+      setLikedUnsplash(photos)
+      setLikedUnsplashLoading(false)
+    }
 
     setLoading(false)
   }
@@ -103,7 +144,8 @@ export default function DashboardPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'uploads', label: `내 작품 (${uploads.length})` },
     { key: 'purchases', label: `구매 내역 (${purchases.length})` },
-    { key: 'downloads', label: `다운로드 (${downloads.length})` },
+    { key: 'likes', label: `좋아요 (${likedWorks.length + likedUnsplash.length})` },
+    { key: 'following', label: `팔로우 (${followingArtists.length})` },
     { key: 'profile', label: '프로필 수정' },
   ]
 
@@ -184,62 +226,108 @@ export default function DashboardPage() {
             <p className="text-center py-16 text-[var(--gray-500)]">구매 내역이 없습니다</p>
           ) : (
             purchases.map((p) => (
-              <div key={p.id} className="flex items-center gap-4 p-4 border border-[var(--gray-200)] rounded-lg">
-                {p.work && (
-                  <>
-                    <img
-                      src={(p.work as Work).thumbnail_url || (p.work as Work).image_url}
-                      alt={(p.work as Work).title}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <Link href={`/works/${p.work_id}`} className="font-medium text-[var(--gray-900)] hover:text-[var(--primary)]">
-                        {(p.work as Work).title}
-                      </Link>
-                      <p className="text-sm text-[var(--gray-500)]">
-                        {new Date(p.created_at).toLocaleDateString('ko-KR')} | {p.amount.toLocaleString()}원
-                      </p>
-                    </div>
-                    <span className={`text-sm px-2 py-1 rounded-full ${
-                      p.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {p.status === 'completed' ? '완료' : p.status === 'pending' ? '대기' : '환불'}
-                    </span>
-                  </>
-                )}
+              <div key={p.id} className="flex items-center gap-4 p-4 bg-white border border-[var(--gray-200)] rounded-xl">
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-[var(--gray-100)] shrink-0">
+                  {p.image && <img src={p.image} alt={p.title} className="w-full h-full object-cover" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-[var(--gray-900)] text-[14px] truncate">{p.title}</p>
+                  <p className="text-[12px] text-[var(--gray-400)] mt-0.5">{p.author}</p>
+                  <p className="text-[12px] text-[var(--gray-400)] mt-0.5">
+                    {new Date(p.purchasedAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[14px] font-bold text-[var(--primary)]">{p.price.toLocaleString()}원</p>
+                  <span className="text-[11px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">완료</span>
+                </div>
               </div>
             ))
           )}
         </div>
       )}
 
-      {/* 다운로드 내역 */}
-      {tab === 'downloads' && (
-        <div className="space-y-4">
-          {downloads.length === 0 ? (
-            <p className="text-center py-16 text-[var(--gray-500)]">다운로드 내역이 없습니다</p>
+      {/* 좋아요한 작품 */}
+      {tab === 'likes' && (
+        <div>
+          {likedWorks.length === 0 && likedUnsplash.length === 0 && !likedUnsplashLoading ? (
+            <p className="text-center py-16 text-[var(--gray-500)]">좋아요한 작품이 없습니다</p>
           ) : (
-            downloads.map((d) => (
-              <div key={d.id} className="flex items-center gap-4 p-4 border border-[var(--gray-200)] rounded-lg">
-                {d.work && (
-                  <>
-                    <img
-                      src={(d.work as Work).thumbnail_url || (d.work as Work).image_url}
-                      alt={(d.work as Work).title}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <Link href={`/works/${d.work_id}`} className="font-medium text-[var(--gray-900)] hover:text-[var(--primary)]">
-                        {(d.work as Work).title}
-                      </Link>
-                      <p className="text-sm text-[var(--gray-500)]">
-                        {new Date(d.created_at).toLocaleDateString('ko-KR')}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))
+            <>
+              {/* DB 작품 좋아요 */}
+              {likedWorks.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="text-[16px] font-bold text-[var(--gray-900)] mb-4">PicStore 작품</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {likedWorks.map((work) => (
+                      <div key={work.id} className="border border-[var(--gray-200)] rounded-xl overflow-hidden">
+                        <Link href={`/works/${work.id}`}>
+                          <div className="aspect-[4/3] overflow-hidden bg-[var(--gray-100)]">
+                            <img src={work.thumbnail_url || work.image_url} alt={work.title} className="w-full h-full object-cover hover:scale-105 transition-transform" />
+                          </div>
+                        </Link>
+                        <div className="p-4">
+                          <h3 className="font-medium text-[var(--gray-900)]">{work.title}</h3>
+                          <p className="text-sm text-[var(--gray-500)] mt-1">
+                            {work.is_free ? '무료' : `${work.price.toLocaleString()}원`}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Unsplash 좋아요 */}
+              {likedUnsplashLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="w-6 h-6 border-3 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : likedUnsplash.length > 0 && (
+                <div>
+                  <h3 className="text-[16px] font-bold text-[var(--gray-900)] mb-4">추천 이미지</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {likedUnsplash.map((photo, idx) => (
+                      <UnsplashCard
+                        key={`${photo.id}-${idx}`}
+                        photo={photo}
+                        onClick={() => setSelectedPhoto(photo)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* 팔로우한 작가 */}
+      {tab === 'following' && (
+        <div>
+          {followingArtists.length === 0 ? (
+            <p className="text-center py-16 text-[var(--gray-500)]">팔로우한 작가가 없습니다</p>
+          ) : (
+            <div className="space-y-3">
+              {followingArtists.map((artist) => (
+                <Link
+                  key={artist.id}
+                  href={`/artist/${artist.id}`}
+                  className="flex items-center gap-4 p-4 bg-white border border-[var(--gray-200)] rounded-xl hover:border-[var(--primary)] transition"
+                >
+                  <div className="w-12 h-12 rounded-full bg-[var(--primary)] text-white flex items-center justify-center text-[16px] font-bold shrink-0">
+                    {(artist.name || '?')[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-[var(--gray-900)] text-[14px] truncate">{artist.name || '이름 없음'}</p>
+                    {artist.bio && <p className="text-[12px] text-[var(--gray-400)] truncate mt-0.5">{artist.bio}</p>}
+                  </div>
+                  <svg className="w-4 h-4 text-[var(--gray-400)] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -283,6 +371,13 @@ export default function DashboardPage() {
             {saving ? '저장 중...' : '저장'}
           </button>
         </div>
+      )}
+      {/* Unsplash 상세 모달 */}
+      {selectedPhoto && (
+        <ImageDetailModal
+          photo={selectedPhoto}
+          onClose={() => setSelectedPhoto(null)}
+        />
       )}
     </div>
   )

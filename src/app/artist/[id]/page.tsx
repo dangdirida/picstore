@@ -11,6 +11,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
   const [works, setWorks] = useState<Work[]>([])
   const [isFollowing, setIsFollowing] = useState(false)
   const [followersCount, setFollowersCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -52,6 +53,13 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
       .select('*', { count: 'exact', head: true })
       .eq('following_id', id)
     setFollowersCount(count || 0)
+
+    // 팔로잉 수
+    const { count: fCount } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('follower_id', id)
+    setFollowingCount(fCount || 0)
 
     // 팔로우 여부
     if (user) {
@@ -118,9 +126,10 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
           <div className="flex items-center gap-4 mt-3 text-sm text-[var(--gray-500)]">
             <span>작품 {works.length}개</span>
             <span>팔로워 {followersCount}명</span>
+            <span>팔로잉 {followingCount}명</span>
           </div>
         </div>
-        {currentUserId && currentUserId !== id && (
+        {currentUserId !== id && (
           <button
             onClick={handleFollow}
             className={`px-6 py-2.5 rounded-lg font-medium transition ${
