@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest picstore-app --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack 2>&1)",
+      "Bash(npx create-next-app@latest picstore-app --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack --no-experimental-app 2>&1 << EOF\nNo\nEOF)",
+      "Bash(rm -rf /Users/ogq_de/Desktop/하루하나/PicStore/picstore-app 2>&1 && npm cache clean --force 2>&1; npm config set cache /tmp/npm-cache 2>&1 && npx create-next-app@latest /Users/ogq_de/Desktop/하루하나/PicStore/picstore-app --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack 2>&1 << EOF\nNo\nEOF)",
+      "Bash(mv picstore-app/.git . 2>/dev/null; mv picstore-app/.gitignore . 2>/dev/null; mv picstore-app/* . 2>/dev/null; mv picstore-app/.eslintrc* . 2>/dev/null; mv picstore-app/.next . 2>/dev/null; ls picstore-app/ 2>/dev/null; cp -r picstore-app/.[!.]* . 2>/dev/null; rm -rf picstore-app)",
+      "Bash(npm install @supabase/supabase-js @supabase/ssr 2>&1)",
+      "Bash(npm run build 2>&1 | tail -50)",
+      "Bash(npm run build 2>&1 | tail -30)"
+    ]
+  }
+}
