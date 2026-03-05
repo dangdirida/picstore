@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     siteName: 'PicStore',
     images: [
       {
-        url: '/og-thumbnail.png',
+        url: 'https://picstore-sandy.vercel.app/og-image.png',
         width: 1200,
         height: 630,
         alt: 'PicStore - 디지털 이미지 마켓플레이스',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'PicStore',
     description: '크리에이터의 작품을 발견하고 소장하세요',
-    images: ['/og-thumbnail.png'],
+    images: ['https://picstore-sandy.vercel.app/og-image.png'],
   },
 }
 
