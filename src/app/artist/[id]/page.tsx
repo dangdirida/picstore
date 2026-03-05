@@ -76,7 +76,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
   }
 
   const handleFollow = async () => {
-    if (!currentUserId) return window.location.href = '/login'
+    if (!currentUserId) return window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.pathname)}`
 
     if (isFollowing) {
       await supabase.from('follows').delete().eq('follower_id', currentUserId).eq('following_id', id)

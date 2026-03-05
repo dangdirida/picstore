@@ -76,7 +76,7 @@ export default function WorkDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const handleLike = async () => {
-    if (!user) return window.location.href = '/login'
+    if (!user) return window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.pathname)}`
 
     if (isLiked) {
       await supabase.from('likes').delete().eq('work_id', id).eq('user_id', user.id)
@@ -91,7 +91,7 @@ export default function WorkDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) return window.location.href = '/login'
+    if (!user) return window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.pathname)}`
     if (!newComment.trim()) return
 
     const { data } = await supabase
@@ -112,7 +112,7 @@ export default function WorkDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const handleDownload = async () => {
-    if (!user) return window.location.href = '/login'
+    if (!user) return window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.pathname)}`
     if (!work) return
 
     if (!work.is_free && !purchased) {

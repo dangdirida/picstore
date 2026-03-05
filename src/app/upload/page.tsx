@@ -21,7 +21,7 @@ export default function UploadPage() {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        router.push('/login')
+        router.push('/login?returnUrl=/upload')
         return
       }
       setUserId(user.id)

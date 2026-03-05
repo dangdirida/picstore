@@ -34,7 +34,7 @@ function CheckoutContent() {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        router.push('/login')
+        router.push(`/login?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`)
         return
       }
       setUserEmail(user.email || '')

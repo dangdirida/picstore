@@ -35,7 +35,7 @@ export default function WorkCard({ work }: WorkCardProps) {
     e.preventDefault()
     e.stopPropagation()
     if (!userId) {
-      window.location.href = '/login'
+      window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`
       return
     }
     if (liked) {

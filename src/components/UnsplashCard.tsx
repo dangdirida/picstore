@@ -36,7 +36,7 @@ export default function UnsplashCard({ photo, onClick }: UnsplashCardProps) {
     e.preventDefault()
     e.stopPropagation()
     if (!userId) {
-      window.location.href = '/login'
+      window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`
       return
     }
     const newState = toggleLikedUnsplash(photo.id)

@@ -37,7 +37,7 @@ export default function AdminPage() {
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      router.push('/login')
+      router.push('/login?returnUrl=/admin')
       return
     }
 

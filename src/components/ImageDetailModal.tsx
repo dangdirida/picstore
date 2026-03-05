@@ -66,7 +66,7 @@ export default function ImageDetailModal({ photo, onClose }: ImageDetailModalPro
 
   const handleLike = useCallback(() => {
     if (!userId) {
-      window.location.href = '/login'
+      window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`
       return
     }
     const newState = toggleLikedUnsplash(photo.id)
